@@ -16,9 +16,25 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        getByName("debug") {
+            // Fixed debug keystore (checked into the repo) so every build — whether
+            // from Android Studio or GitHub Actions — is signed identically. This lets
+            // new APKs install as an UPDATE over the old one instead of requiring an
+            // uninstall, which is what preserves your notes across builds.
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

@@ -35,13 +35,28 @@ app/src/main/java/com/example/charnotes/
   MainActivity.kt      – Compose UI: lock/unlock screens, list screen, add/edit dialog
 ```
 
-## A note on the app lock and existing data
+## Keeping your data across rebuilds
 
-This version changed the notes database schema (added a title column) and bumped the Room
-database version, using `fallbackToDestructiveMigration()`. If you had a previous build of
-this app installed, updating to this version will wipe existing notes (a fresh empty database
-gets created). This only matters once — future updates that don't change the schema won't
-affect your data.
+Every debug APK needs to be signed, and by default Android auto-generates a fresh, random
+debug signing key on whatever machine builds it. Since GitHub Actions runs on a brand-new
+temporary machine each time, that meant every build used a *different* signature — and
+Android refuses to install an "update" whose signature doesn't match what's already on your
+phone, forcing an uninstall (which wipes the local database) every time.
+
+To fix this, a **fixed debug keystore** (`app/debug.keystore`) is checked into the repo and
+wired up in `app/build.gradle.kts`, so every build — from Android Studio or from GitHub
+Actions — is signed identically. From now on, installing a new build over an existing one
+works as a normal in-place update, and your notes persist.
+
+**One-time catch:** the very first time you install a build made with this fixed keystore,
+you'll still need to uninstall whatever's currently on your phone (it was signed with a
+different, randomly-generated key). After that one uninstall, every future update will
+install cleanly without wiping your data.
+
+> Note: `debug.keystore` here is intentionally a throwaway, well-known development key (not
+> a secret) — this is normal practice for debug builds and is never used for a real Play
+> Store release. Don't reuse it for a signed release build.
+
 
 ## Opening the project
 
