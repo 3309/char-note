@@ -183,6 +183,8 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
 
     // null = dialog closed. A Note with id == 0L represents "new note".
     var editingNote by remember { mutableStateOf<Note?>(null) }
+    // Note pending delete confirmation (null = no confirmation dialog showing).
+    var noteToDelete by remember { mutableStateOf<Note?>(null) }
 
     Scaffold(
         topBar = {
@@ -222,7 +224,7 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
                     NoteCard(
                         note = note,
                         onClick = { editingNote = note },
-                        onDelete = { viewModel.deleteNote(note) }
+                        onDelete = { noteToDelete = note }
                     )
                 }
             }
@@ -240,6 +242,32 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
                     viewModel.updateNote(note, title, content)
                 }
                 editingNote = null
+            }
+        )
+    }
+
+    noteToDelete?.let { note ->
+        AlertDialog(
+            onDismissRequest = { noteToDelete = null },
+            title = { Text("Delete this note?") },
+            text = {
+                Text(
+                    if (note.title.isNotBlank()) "\"${note.title}\" will be deleted permanently."
+                    else "This note will be deleted permanently."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteNote(note)
+                        noteToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { noteToDelete = null }) { Text("Cancel") }
             }
         )
     }
