@@ -138,4 +138,27 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    /** Exports every note (and its attachment) into a single backup .zip at [destination]. */
+    fun exportBackup(destination: Uri, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val currentNotes = _notes.value
+            val success = withContext(Dispatchers.IO) {
+                BackupManager.exportBackup(context, destination, currentNotes)
+            }
+            onResult(success)
+        }
+    }
+
+    /** Imports notes (and attachments) from a backup .zip previously created by [exportBackup]. */
+    fun importBackup(source: Uri, onResult: (Int?) -> Unit) {
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val restoredCount = withContext(Dispatchers.IO) {
+                BackupManager.importBackup(context, source)
+            }
+            onResult(restoredCount)
+        }
+    }
 }

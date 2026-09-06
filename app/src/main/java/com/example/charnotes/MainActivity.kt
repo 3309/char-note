@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -196,11 +197,32 @@ fun UnlockScreen(onUnlocked: () -> Unit) {
 @Composable
 fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
     val notes by viewModel.notes.collectAsState()
+    val context = LocalContext.current
 
     // null = dialog closed. A Note with id == 0L represents "new note".
     var editingNote by remember { mutableStateOf<Note?>(null) }
     // Note pending delete confirmation (null = no confirmation dialog showing).
     var noteToDelete by remember { mutableStateOf<Note?>(null) }
+    var menuExpanded by remember { mutableStateOf(false) }
+    var statusMessage by remember { mutableStateOf<String?>(null) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        viewModel.exportBackup(uri) { success ->
+            statusMessage = if (success) "Backup saved." else "Backup failed."
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        viewModel.importBackup(uri) { count ->
+            statusMessage = if (count != null) "Restored $count note(s)." else "Restore failed."
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -209,6 +231,26 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
                 actions = {
                     IconButton(onClick = onLock) {
                         Icon(Icons.Filled.Lock, contentDescription = "Lock app")
+                    }
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Backup notes…") },
+                            onClick = {
+                                menuExpanded = false
+                                val fileName = "charnotes_backup_${System.currentTimeMillis()}.zip"
+                                exportLauncher.launch(fileName)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Restore from backup…") },
+                            onClick = {
+                                menuExpanded = false
+                                importLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                            }
+                        )
                     }
                 }
             )
@@ -285,6 +327,17 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
             },
             dismissButton = {
                 TextButton(onClick = { noteToDelete = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    statusMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { statusMessage = null },
+            title = { Text("Backup") },
+            text = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = { statusMessage = null }) { Text("OK") }
             }
         )
     }

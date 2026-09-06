@@ -92,6 +92,29 @@ the note card; any other file type shows as a tappable filename chip that opens 
 whatever app on your phone handles that file type. Tap the **X** next to an attachment in the
 edit dialog to remove it from the note (this also deletes the copied file).
 
+## Moving your notes to a new phone (Backup / Restore)
+
+Since this app is sideloaded rather than installed from the Play Store, Android's automatic
+phone-to-phone data transfer isn't reliable for it. Instead, use the built-in backup feature:
+
+1. On your **old phone**, open the overflow menu (⋮ in the top bar) → **"Backup notes…"**.
+   Choose where to save the file (Downloads, Google Drive, etc.) — it creates a single
+   `.zip` containing every note and its attachments.
+2. Move that `.zip` file to your new phone any way you like (email it, upload to Drive and
+   download it there, USB transfer, etc.).
+3. Install CharNotes on the **new phone** (same build, so it can be a fresh build from the
+   same GitHub Actions pipeline).
+4. Open the overflow menu → **"Restore from backup…"** and select the `.zip` file. Your
+   notes and attachments are added back in.
+
+A few notes on this:
+- Restoring **adds** the backed-up notes to whatever's already in the app rather than
+  replacing them, so it's safe to restore into an app that already has some notes.
+- The backup file isn't encrypted — if your notes are sensitive, keep the `.zip` somewhere
+  private (not, say, in a shared Drive folder) between export and import.
+- This is a manual step you do once when switching phones, not an ongoing sync — there's no
+  automatic cloud backup here.
+
 
 ## Opening the project
 
