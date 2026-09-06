@@ -57,6 +57,31 @@ install cleanly without wiping your data.
 > a secret) — this is normal practice for debug builds and is never used for a real Play
 > Store release. Don't reuse it for a signed release build.
 
+## Adding notes from Tasker (or other automation apps)
+
+CharNotes exposes a broadcast receiver so automation apps can create a note without opening
+the UI at all. In Tasker, create a task with:
+
+- **Action**: System → Send Intent
+- **Action**: `com.example.charnotes.ADD_NOTE`
+- **Cat**: Default
+- **Target**: Broadcast Receiver
+- **Package**: `com.example.charnotes`
+- **Class**: `com.example.charnotes.NoteReceiver`
+- **Extra**: `content:Your note text here` (required — this becomes the note body)
+- **Extra**: `title:Your title here` (optional)
+
+Running that Tasker action saves a new note immediately, timestamped like any other note.
+
+**Two things worth knowing:**
+- Notes added this way **skip the password lock screen** — there's no UI involved, so
+  nothing to unlock. That's expected for automation, but keep it in mind if you're relying
+  on the lock for privacy.
+- The receiver is exported with no permission requirement, meaning *any* app on your device
+  that knows the action name (`com.example.charnotes.ADD_NOTE`) could add a note this way —
+  not just Tasker. For a personal, low-stakes notes app this is a reasonable trade-off for
+  simplicity, but it's not locked down against other apps on your phone.
+
 
 ## Opening the project
 
