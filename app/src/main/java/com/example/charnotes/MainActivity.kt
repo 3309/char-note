@@ -1,27 +1,43 @@
 package com.example.charnotes
 
+import android.content.Intent
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -210,7 +226,7 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No notes yet. Tap + to add one (max $CHAR_LIMIT characters).")
+                Text("No notes yet. Tap + to add one.")
             }
         } else {
             LazyColumn(
@@ -234,12 +250,13 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
     editingNote?.let { note ->
         NoteEditDialog(
             note = note,
+            viewModel = viewModel,
             onDismiss = { editingNote = null },
-            onSave = { title, content ->
+            onSave = { title, content, attachment, clearAttachment ->
                 if (note.id == 0L) {
-                    viewModel.addNote(title, content)
+                    viewModel.addNote(title, content, attachment)
                 } else {
-                    viewModel.updateNote(note, title, content)
+                    viewModel.updateNote(note, title, content, attachment, clearAttachment)
                 }
                 editingNote = null
             }
@@ -275,44 +292,133 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
 
 @Composable
 fun NoteCard(note: Note, onClick: () -> Unit, onDelete: () -> Unit) {
+    val context = LocalContext.current
     val dateStr = remember(note.timestamp) {
         SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault()).format(Date(note.timestamp))
     }
     Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable(onClick = onClick)
-            ) {
-                if (note.title.isNotBlank()) {
-                    Text(note.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                    Spacer(modifier = Modifier.height(2.dp))
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(onClick = onClick)
+                ) {
+                    if (note.title.isNotBlank()) {
+                        Text(note.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                        Spacer(modifier = Modifier.height(2.dp))
+                    }
+                    Text(note.content, fontWeight = FontWeight.Normal)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Created $dateStr",
+                        style = MaterialTheme.typography.labelSmall
+                    )
                 }
-                Text(note.content, fontWeight = FontWeight.Normal)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    "Created $dateStr  •  ${note.content.length}/$CHAR_LIMIT",
-                    style = MaterialTheme.typography.labelSmall
-                )
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Delete note")
+                }
             }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Filled.Delete, contentDescription = "Delete note")
+            note.attachmentPath?.let { path ->
+                Spacer(modifier = Modifier.height(8.dp))
+                AttachmentPreview(
+                    path = path,
+                    name = note.attachmentName ?: "Attachment",
+                    mimeType = note.attachmentMimeType,
+                    onClick = { openAttachment(context, path, note.attachmentMimeType) }
+                )
             }
         }
     }
 }
 
+/** Thumbnail for images, or a tappable filename chip for any other file type. */
+@Composable
+fun AttachmentPreview(path: String, name: String, mimeType: String?, onClick: () -> Unit) {
+    val isImage = mimeType?.startsWith("image/") == true
+    if (isImage) {
+        val bitmap = remember(path) {
+            runCatching { BitmapFactory.decodeFile(path)?.asImageBitmap() }.getOrNull()
+        }
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onClick)
+            )
+            return
+        }
+    }
+    // Fallback: generic file chip (also used for non-image attachments).
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Filled.InsertDriveFile, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(name, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/** Opens the attachment with whatever app the user has for that file type. */
+fun openAttachment(context: android.content.Context, path: String, mimeType: String?) {
+    val file = File(path)
+    if (!file.exists()) return
+    val uri: Uri = FileProvider.getUriForFile(context, "com.example.charnotes.fileprovider", file)
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, mimeType ?: "*/*")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    runCatching { context.startActivity(intent) }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoteEditDialog(note: Note, onDismiss: () -> Unit, onSave: (title: String, content: String) -> Unit) {
+fun NoteEditDialog(
+    note: Note,
+    viewModel: NoteViewModel,
+    onDismiss: () -> Unit,
+    onSave: (title: String, content: String, attachment: Attachment?, clearAttachment: Boolean) -> Unit
+) {
     var title by remember { mutableStateOf(note.title) }
     var content by remember { mutableStateOf(note.content) }
+
+    // Attachment state for this editing session.
+    var currentPath by remember { mutableStateOf(note.attachmentPath) }
+    var currentName by remember { mutableStateOf(note.attachmentName) }
+    var currentMime by remember { mutableStateOf(note.attachmentMimeType) }
+    var newAttachment by remember { mutableStateOf<Attachment?>(null) }
+    var attachmentCleared by remember { mutableStateOf(false) }
+    var isImporting by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    val pickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        isImporting = true
+        coroutineScope.launch {
+            val result = viewModel.importAttachment(uri)
+            isImporting = false
+            if (result != null) {
+                newAttachment = result
+                attachmentCleared = false
+                currentPath = result.path
+                currentName = result.name
+                currentMime = result.mimeType
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -329,24 +435,51 @@ fun NoteEditDialog(note: Note, onDismiss: () -> Unit, onSave: (title: String, co
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = content,
-                    onValueChange = { if (it.length <= CHAR_LIMIT) content = it },
+                    onValueChange = { content = it },
                     placeholder = { Text("What's on your mind?") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
-                    maxLines = 6
+                    maxLines = 10
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    "${content.length}/$CHAR_LIMIT",
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.align(Alignment.End)
-                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (currentPath != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            AttachmentPreview(
+                                path = currentPath!!,
+                                name = currentName ?: "Attachment",
+                                mimeType = currentMime,
+                                onClick = {}
+                            )
+                        }
+                        IconButton(onClick = {
+                            currentPath = null
+                            currentName = null
+                            currentMime = null
+                            newAttachment = null
+                            attachmentCleared = true
+                        }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Remove attachment")
+                        }
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = { pickerLauncher.launch(arrayOf("*/*")) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.AttachFile, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if (isImporting) "Adding attachment…" else "Attach a photo or file")
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onSave(title, content) },
-                enabled = content.trim().isNotEmpty()
+                onClick = { onSave(title, content, newAttachment, attachmentCleared) },
+                enabled = content.trim().isNotEmpty() && !isImporting
             ) { Text("Save") }
         },
         dismissButton = {

@@ -1,18 +1,18 @@
 # CharNotes
 
-A tiny Android app for jotting down short notes (200 characters max, by default) that are
-stored locally on the device — no network, no accounts. Notes have a title, content, and a
+A tiny Android app for jotting down short notes that are stored locally on the device — no network, no accounts. Notes have a title, content, and a
 recorded creation date/time, and the app is protected by a password lock screen.
 
 ## How it works
 
 - **Storage**: [Room](https://developer.android.com/training/data-storage/room) (SQLite under
   the hood), persisted in the app's private database file. Nothing leaves the device.
-- **UI**: Jetpack Compose + Material 3. A list of notes, a "+" button to add a new one, and a
-  live `x/200` character counter while typing.
-- **Character limit**: controlled by the `CHAR_LIMIT` constant in
-  `app/src/main/java/com/example/charnotes/Note.kt`. Change that one number to allow shorter
-  or longer notes. `TITLE_CHAR_LIMIT` controls the title length the same way.
+- **UI**: Jetpack Compose + Material 3. A list of notes, a "+" button to add a new one, and an
+  unlimited-length note body (titles are capped short, see below).
+- **Title length**: capped via the `TITLE_CHAR_LIMIT` constant in
+  `app/src/main/java/com/example/charnotes/Note.kt`. There's no limit on note content —
+  if you want to reintroduce one, add a `.take(N)` where content is trimmed in
+  `NoteViewModel.kt`.
 - **Created date/time**: recorded automatically (`System.currentTimeMillis()`) the moment a
   note is first saved, and shown on each note card.
 - **App lock**: on first launch you're asked to set a password. Every subsequent launch (and
@@ -27,7 +27,7 @@ recorded creation date/time, and the app is protected by a password lock screen.
 
 ```
 app/src/main/java/com/example/charnotes/
-  Note.kt             – Room entity (title, content, timestamp) + CHAR_LIMIT / TITLE_CHAR_LIMIT
+  Note.kt             – Room entity (title, content, timestamp) + TITLE_CHAR_LIMIT
   NoteDao.kt           – database queries (insert/update/delete/getAll)
   NoteDatabase.kt      – Room database singleton
   NoteViewModel.kt     – loads notes, enforces character limits, exposes state to the UI
@@ -82,6 +82,16 @@ Running that Tasker action saves a new note immediately, timestamped like any ot
   not just Tasker. For a personal, low-stakes notes app this is a reasonable trade-off for
   simplicity, but it's not locked down against other apps on your phone.
 
+## Attaching a photo or file to a note
+
+Each note can optionally carry one attachment. In the add/edit dialog, tap **"Attach a photo
+or file"** to open the system file/photo picker. Whatever you pick is **copied into the app's
+private storage** (under `filesDir/attachments/`), so the note keeps its attachment even if
+the original photo or file is later deleted or moved. Images show as a thumbnail directly on
+the note card; any other file type shows as a tappable filename chip that opens it with
+whatever app on your phone handles that file type. Tap the **X** next to an attachment in the
+edit dialog to remove it from the note (this also deletes the copied file).
+
 
 ## Opening the project
 
@@ -93,7 +103,8 @@ Running that Tasker action saves a new note immediately, timestamped like any ot
 
 ## Things you might want to change
 
-- **Character limit** — edit `CHAR_LIMIT` in `Note.kt`.
+- **Title length limit** — edit `TITLE_CHAR_LIMIT` in `Note.kt`. Note content itself is
+  currently unlimited.
 - **App icon / name** — `app/src/main/res/values/strings.xml` and the manifest's
   `android:icon` (currently a placeholder system icon so the project builds without extra
   image assets).

@@ -35,7 +35,7 @@ class NoteReceiver : BroadcastReceiver() {
         if (intent.action != ACTION_ADD_NOTE) return
 
         val title = intent.getStringExtra(EXTRA_TITLE)?.trim()?.take(TITLE_CHAR_LIMIT) ?: ""
-        val content = intent.getStringExtra(EXTRA_CONTENT)?.trim()?.take(CHAR_LIMIT) ?: ""
+        val content = intent.getStringExtra(EXTRA_CONTENT)?.trim() ?: ""
         if (content.isEmpty()) return // nothing to save
 
         // BroadcastReceivers must finish quickly; goAsync() lets us do the DB write
