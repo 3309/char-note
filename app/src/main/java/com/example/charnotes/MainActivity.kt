@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
@@ -32,11 +34,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.example.charnotes.ui.theme.CharNotesColors
+import com.example.charnotes.ui.theme.CharNotesTheme
+import com.example.charnotes.ui.theme.NoteCardShape
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -50,7 +54,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            CharNotesTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppRoot(viewModel)
                 }
@@ -93,54 +97,81 @@ fun SetPasswordScreen(onPasswordSet: () -> Unit) {
     var confirmPassword by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Filled.Lock,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Set a password to protect your notes", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it; error = null },
-                label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it; error = null },
-                label = { Text("Confirm password") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            error?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(it, color = MaterialTheme.colorScheme.error)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    when {
-                        password.isBlank() -> error = "Password can't be empty"
-                        password != confirmPassword -> error = "Passwords don't match"
-                        else -> {
-                            PasswordManager.setPassword(context, password)
-                            onPasswordSet()
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CharNotesColors.Ink)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = CharNotesColors.Surface),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(28.dp)
             ) {
-                Text("Set password & continue")
+                Icon(
+                    Icons.Filled.Lock,
+                    contentDescription = null,
+                    tint = CharNotesColors.Gold,
+                    modifier = Modifier.size(40.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Protect your notes",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = CharNotesColors.TextInk
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Choose a password you'll remember — there's no recovery option.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = CharNotesColors.TextMuted
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it; error = null },
+                    label = { Text("Password") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it; error = null },
+                    label = { Text("Confirm password") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                error?.let {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(
+                    onClick = {
+                        when {
+                            password.isBlank() -> error = "Password can't be empty"
+                            password != confirmPassword -> error = "Passwords don't match"
+                            else -> {
+                                PasswordManager.setPassword(context, password)
+                                onPasswordSet()
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = CharNotesColors.Ink),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Set password & continue")
+                }
             }
         }
     }
@@ -152,42 +183,69 @@ fun UnlockScreen(onUnlocked: () -> Unit) {
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Filled.Lock,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Enter your password", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it; error = null },
-                label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                isError = error != null,
-                modifier = Modifier.fillMaxWidth()
-            )
-            error?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(it, color = MaterialTheme.colorScheme.error)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    if (PasswordManager.checkPassword(context, password)) {
-                        onUnlocked()
-                    } else {
-                        error = "Incorrect password"
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CharNotesColors.Ink)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = CharNotesColors.Surface),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(28.dp)
             ) {
-                Text("Unlock")
+                Icon(
+                    Icons.Filled.Lock,
+                    contentDescription = null,
+                    tint = CharNotesColors.Gold,
+                    modifier = Modifier.size(40.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "CharNotes",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = CharNotesColors.TextInk
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Enter your password to continue",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = CharNotesColors.TextMuted
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it; error = null },
+                    label = { Text("Password") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    isError = error != null,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                error?.let {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(
+                    onClick = {
+                        if (PasswordManager.checkPassword(context, password)) {
+                            onUnlocked()
+                        } else {
+                            error = "Incorrect password"
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = CharNotesColors.Ink),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Unlock")
+                }
             }
         }
     }
@@ -225,9 +283,15 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
     }
 
     Scaffold(
+        containerColor = CharNotesColors.Paper,
         topBar = {
             TopAppBar(
                 title = { Text("CharNotes") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = CharNotesColors.Ink,
+                    titleContentColor = CharNotesColors.Paper,
+                    actionIconContentColor = CharNotesColors.Paper
+                ),
                 actions = {
                     IconButton(onClick = onLock) {
                         Icon(Icons.Filled.Lock, contentDescription = "Lock app")
@@ -256,9 +320,13 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { editingNote = Note(id = 0, title = "", content = "") }) {
-                Icon(Icons.Filled.Add, contentDescription = "Add note")
-            }
+            ExtendedFloatingActionButton(
+                onClick = { editingNote = Note(id = 0, title = "", content = "") },
+                containerColor = CharNotesColors.Ink,
+                contentColor = CharNotesColors.Paper,
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                text = { Text("New note") }
+            )
         }
     ) { padding ->
         if (notes.isEmpty()) {
@@ -268,7 +336,26 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No notes yet. Tap + to add one.")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = null,
+                        tint = CharNotesColors.Gold,
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Nothing here yet",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = CharNotesColors.TextInk
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Tap \"New note\" below to write your first one.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = CharNotesColors.TextMuted
+                    )
+                }
             }
         } else {
             LazyColumn(
@@ -349,37 +436,65 @@ fun NoteCard(note: Note, onClick: () -> Unit, onDelete: () -> Unit) {
     val dateStr = remember(note.timestamp) {
         SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault()).format(Date(note.timestamp))
     }
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(onClick = onClick)
-                ) {
-                    if (note.title.isNotBlank()) {
-                        Text(note.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                        Spacer(modifier = Modifier.height(2.dp))
+    Card(
+        shape = NoteCardShape,
+        colors = CardDefaults.cardColors(containerColor = CharNotesColors.Surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, CharNotesColors.Hairline),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            // A thin "spine" strip, like the edge of a notebook page.
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(CharNotesColors.Ink)
+            )
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable(onClick = onClick)
+                    ) {
+                        if (note.title.isNotBlank()) {
+                            Text(
+                                note.title,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = CharNotesColors.TextInk
+                            )
+                            Spacer(modifier = Modifier.height(3.dp))
+                        }
+                        Text(
+                            note.content,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = CharNotesColors.TextInk
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            "Created $dateStr",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = CharNotesColors.TextMuted
+                        )
                     }
-                    Text(note.content, fontWeight = FontWeight.Normal)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "Created $dateStr",
-                        style = MaterialTheme.typography.labelSmall
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = "Delete note",
+                            tint = CharNotesColors.TextMuted
+                        )
+                    }
+                }
+                note.attachmentPath?.let { path ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AttachmentPreview(
+                        path = path,
+                        name = note.attachmentName ?: "Attachment",
+                        mimeType = note.attachmentMimeType,
+                        onClick = { openAttachment(context, path, note.attachmentMimeType) }
                     )
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Delete note")
-                }
-            }
-            note.attachmentPath?.let { path ->
-                Spacer(modifier = Modifier.height(8.dp))
-                AttachmentPreview(
-                    path = path,
-                    name = note.attachmentName ?: "Attachment",
-                    mimeType = note.attachmentMimeType,
-                    onClick = { openAttachment(context, path, note.attachmentMimeType) }
-                )
             }
         }
     }
@@ -412,13 +527,14 @@ fun AttachmentPreview(path: String, name: String, mimeType: String?, onClick: ()
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
+            .background(CharNotesColors.Paper)
             .clickable(onClick = onClick)
-            .padding(8.dp),
+            .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Filled.InsertDriveFile, contentDescription = null)
+        Icon(Icons.Filled.InsertDriveFile, contentDescription = null, tint = CharNotesColors.Gold)
         Spacer(modifier = Modifier.width(8.dp))
-        Text(name, style = MaterialTheme.typography.bodyMedium)
+        Text(name, style = MaterialTheme.typography.bodyMedium, color = CharNotesColors.TextInk)
     }
 }
 
@@ -520,9 +636,11 @@ fun NoteEditDialog(
                 } else {
                     OutlinedButton(
                         onClick = { pickerLauncher.launch(arrayOf("*/*")) },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CharNotesColors.Ink),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CharNotesColors.Ink),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Filled.AttachFile, contentDescription = null)
+                        Icon(Icons.Filled.AttachFile, contentDescription = null, tint = CharNotesColors.Gold)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(if (isImporting) "Adding attachment…" else "Attach a photo or file")
                     }

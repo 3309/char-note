@@ -7,8 +7,11 @@ recorded creation date/time, and the app is protected by a password lock screen.
 
 - **Storage**: [Room](https://developer.android.com/training/data-storage/room) (SQLite under
   the hood), persisted in the app's private database file. Nothing leaves the device.
-- **UI**: Jetpack Compose + Material 3. A list of notes, a "+" button to add a new one, and an
-  unlimited-length note body (titles are capped short, see below).
+- **UI**: Jetpack Compose + Material 3, with a custom "notebook" theme — deep forest-ink
+  green for structure, warm parchment background, a single muted gold accent, serif titles
+  paired with a clean sans body face. Theme tokens live in
+  `app/src/main/java/com/example/charnotes/ui/theme/Theme.kt` if you want to adjust colors,
+  type, or the note card shape.
 - **Title length**: capped via the `TITLE_CHAR_LIMIT` constant in
   `app/src/main/java/com/example/charnotes/Note.kt`. There's no limit on note content —
   if you want to reintroduce one, add a `.take(N)` where content is trimmed in
