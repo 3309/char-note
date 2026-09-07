@@ -151,6 +151,21 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Writes a backup .zip to a temp cache file so it can be handed to Android's share
+     * sheet (e.g. to upload to Google Drive, attach to an email, send via WhatsApp, etc.).
+     */
+    fun prepareShareBackup(onResult: (File?) -> Unit) {
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val currentNotes = _notes.value
+            val file = withContext(Dispatchers.IO) {
+                BackupManager.exportBackupToCache(context, currentNotes)
+            }
+            onResult(file)
+        }
+    }
+
     /** Imports notes (and attachments) from a backup .zip previously created by [exportBackup]. */
     fun importBackup(source: Uri, onResult: (Int?) -> Unit) {
         viewModelScope.launch {

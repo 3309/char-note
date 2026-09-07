@@ -98,17 +98,32 @@ edit dialog to remove it from the note (this also deletes the copied file).
 ## Moving your notes to a new phone (Backup / Restore)
 
 Since this app is sideloaded rather than installed from the Play Store, Android's automatic
-phone-to-phone data transfer isn't reliable for it. Instead, use the built-in backup feature:
+phone-to-phone data transfer isn't reliable for it. Instead, use the built-in backup feature,
+available from the overflow menu (⋮) in the top bar:
 
-1. On your **old phone**, open the overflow menu (⋮ in the top bar) → **"Backup notes…"**.
-   Choose where to save the file (Downloads, Google Drive, etc.) — it creates a single
-   `.zip` containing every note and its attachments.
-2. Move that `.zip` file to your new phone any way you like (email it, upload to Drive and
-   download it there, USB transfer, etc.).
-3. Install CharNotes on the **new phone** (same build, so it can be a fresh build from the
-   same GitHub Actions pipeline).
-4. Open the overflow menu → **"Restore from backup…"** and select the `.zip` file. Your
-   notes and attachments are added back in.
+- **"Backup notes…"** — saves a `.zip` (notes + attachments) to a location you pick using
+  the system file picker: local storage, an SD card, or Google Drive if you navigate to it
+  in that picker (Drive shows up there as a storage location once you're signed into the
+  Drive app on the device).
+- **"Share backup (Drive, email, etc.)…"** — builds the same `.zip` and hands it straight to
+  Android's share sheet, so you can send it directly to the Google Drive app, attach it to
+  an email, send it via WhatsApp, Bluetooth, or anything else installed. This is generally
+  the more direct way to get a backup into Drive specifically.
+- **"Restore from backup…"** — pick a previously created `.zip` to bring notes and
+  attachments back in.
+
+**Why not full Google Drive API integration?** Wiring up direct Drive uploads (without going
+through the share sheet) requires setting up a Google Cloud project, OAuth credentials, and
+Google Sign-In — a lot of infrastructure for a personal notes app. The share-sheet approach
+achieves the same result (your backup ends up in Drive) with no extra setup, at the cost of
+one extra tap to pick Drive from the share menu.
+
+To move to a new phone:
+1. On the old phone, use either backup option above to get the `.zip` into Drive (or email,
+   etc.).
+2. Install CharNotes on the new phone (same GitHub Actions build as always).
+3. Open the file from Drive/email on the new phone and choose to open it with CharNotes, or
+   use **"Restore from backup…"** and pick the file from wherever you saved it.
 
 A few notes on this:
 - Restoring **adds** the backed-up notes to whatever's already in the app rather than

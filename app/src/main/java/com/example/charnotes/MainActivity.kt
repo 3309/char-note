@@ -309,6 +309,29 @@ fun NotesScreen(viewModel: NoteViewModel, onLock: () -> Unit) {
                             }
                         )
                         DropdownMenuItem(
+                            text = { Text("Share backup (Drive, email, etc.)…") },
+                            onClick = {
+                                menuExpanded = false
+                                viewModel.prepareShareBackup { file ->
+                                    if (file == null) {
+                                        statusMessage = "Backup failed."
+                                        return@prepareShareBackup
+                                    }
+                                    val uri = FileProvider.getUriForFile(
+                                        context, "com.example.charnotes.fileprovider", file
+                                    )
+                                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "application/zip"
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(
+                                        Intent.createChooser(sendIntent, "Share CharNotes backup")
+                                    )
+                                }
+                            }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Restore from backup…") },
                             onClick = {
                                 menuExpanded = false
